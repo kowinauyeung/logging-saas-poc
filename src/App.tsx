@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
+import { loggly } from './loggly'
 import './App.css'
 
 function App() {
@@ -15,7 +16,15 @@ function App() {
       console.warn('warn: ' + msg)
       console.error('error: ' + msg)
       console.trace('trace: ' + msg)
-      throw new Error(msg)
+      console.table(loggly)
+      loggly.push({
+        type: 'log',
+        level: 'info',
+        meta: {
+          msg,
+        },
+      })
+      // throw new Error(msg)
     }
   }, [count])
 
