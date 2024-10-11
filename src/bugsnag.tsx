@@ -1,7 +1,7 @@
-import React from 'react'
+import BugsnagPerformance from '@bugsnag/browser-performance'
 import Bugsnag from '@bugsnag/js'
 import BugsnagPluginReact from '@bugsnag/plugin-react'
-import BugsnagPerformance from '@bugsnag/browser-performance'
+import React from 'react'
 
 Bugsnag.start({
   apiKey: import.meta.env.VITE_BUGSNAG_API_KEY,
