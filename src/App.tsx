@@ -6,6 +6,7 @@ import './App.css'
 import * as Sentry from '@sentry/react'
 import { faker } from '@faker-js/faker'
 import { TrackJS } from 'trackjs'
+import Bugsnag from '@bugsnag/js'
 
 type Primitive = number | string | boolean | bigint | symbol | null | undefined
 type User = {
@@ -55,11 +56,14 @@ function App() {
   }, [count])
 
   const log = useCallback(({ user, title, indices, extra }: LogObject) => {
+    // Sentry
     Sentry.captureMessage(`${title}_${Date.now()}`, {
       user,
       tags: indices,
       extra,
     })
+
+    // TrackJS
     Object.entries(indices).forEach(([key, value]) => {
       TrackJS.addMetadata(key, String(value))
     })
@@ -70,6 +74,17 @@ function App() {
       extra,
     })
     Object.keys(indices).forEach(TrackJS.removeMetadata)
+
+    // Bugsnag
+    Bugsnag.notify({
+      name: title,
+      message: JSON.stringify({
+        title,
+        user,
+        meta: indices,
+        extra,
+      }),
+    })
   }, [])
 
   const logRandomly = useCallback(() => {
