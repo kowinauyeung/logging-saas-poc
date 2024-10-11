@@ -5,6 +5,30 @@ import { loggly } from './loggly'
 import './App.css'
 import * as Sentry from '@sentry/react'
 import { faker } from '@faker-js/faker'
+import { TrackJS } from 'trackjs'
+
+type Primitive = number | string | boolean | bigint | symbol | null | undefined
+type User = {
+  id: string
+  email: string
+  username: string
+}
+
+type SearchIndices = {
+  action: string
+  [key: string]: string
+}
+
+type Extra = {
+  [key: string]: Primitive
+}
+
+type LogObject = {
+  user: User
+  title: string
+  indices: SearchIndices
+  extra: Extra
+}
 
 function App() {
   const [count, setCount] = useState(0)
@@ -30,14 +54,33 @@ function App() {
     }
   }, [count])
 
+  const log = useCallback(({ user, title, indices, extra }: LogObject) => {
+    Sentry.captureMessage(`${title}_${Date.now()}`, {
+      user,
+      tags: indices,
+      extra,
+    })
+    Object.entries(indices).forEach(([key, value]) => {
+      TrackJS.addMetadata(key, String(value))
+    })
+    TrackJS.track({
+      title,
+      user,
+      meta: indices,
+      extra,
+    })
+    Object.keys(indices).forEach(TrackJS.removeMetadata)
+  }, [])
+
   const logRandomly = useCallback(() => {
-    Sentry.captureMessage(`HOME_RANDOM_CLICK_${Date.now()}`, {
+    log({
+      title: 'HOME_RANDOM_CLICK',
       user: {
         id: faker.database.mongodbObjectId(),
         email: faker.internet.email(),
         username: faker.internet.userName(),
       },
-      tags: {
+      indices: {
         action: faker.hacker.verb(),
         session_id: faker.string.uuid(),
       },
@@ -46,16 +89,17 @@ function App() {
         live_times: faker.number.int({ min: 1, max: 100 }),
       },
     })
-  }, [])
+  }, [log])
 
-  const log = useCallback(() => {
-    Sentry.captureMessage(`HOME_BUTTON_CLICK_${Date.now()}`, {
+  const logHard = useCallback(() => {
+    log({
+      title: 'HOME_BUTTON_CLICK',
       user: {
         id: 'thisisauserid',
         email: 'john.doe@example.com',
         username: 'John Doe',
       },
-      tags: {
+      indices: {
         action: 'home_btn_click',
         session_id: 'thisisasessionid',
       },
@@ -64,7 +108,7 @@ function App() {
         live_times: 4,
       },
     })
-  }, [])
+  }, [log])
 
   return (
     <>
@@ -78,7 +122,7 @@ function App() {
       </div>
       <h1>Vite + React</h1>
       <div className="card">
-        <button onClick={log}>Log</button>
+        <button onClick={logHard}>Log</button>
         <button onClick={logRandomly}>Random</button>
         <button onClick={fireErrorIfEven}>Log error</button>
         <p>
